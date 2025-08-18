@@ -1,77 +1,31 @@
-import { useRef, useState } from "react";
-import { saveChunk, startUploadWorker } from "./uploadworker";
-import axios from "axios";
+import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
+import SelfRecording from "./pages/SelfRecording"; 
+import Signup from "./pages/Signup";
+import Signin from "./pages/Signin";
+import { RecoilRoot } from "recoil";
+import ProtectedRoute from "./pages/ProtectedRoute";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
-  const [url, setUrl] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+    return (
+        <Router>
 
-  const sessionIdRef = useRef<string | null>(null); 
+          <Routes>
+            <Route path="/self" element={<SelfRecording />}/>
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/signin" element={<Signin />} />
 
-  const handleStartRecording = async () => {
-    chunksRef.current = [];
-    sessionIdRef.current = crypto.randomUUID(); 
+            <Route
+             path="/dashboard" 
+             element={
+              <ProtectedRoute>
+                  <Dashboard />
+              </ProtectedRoute>
+            } />
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
+          </Routes>
 
-    const recorder = new MediaRecorder(stream, {
-      mimeType: "video/webm;codecs=vp9,opus",
-    });
-
-
-    recorder.ondataavailable = async(e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
-        console.log("blob recieved");
-        if(!sessionIdRef.current){
-          console.log("sessionIdRef is null");
-          return;
-        }
-        await saveChunk(sessionIdRef.current, "123", e.data);
-
-      }
-    };
-
-    startUploadWorker();
-
-    recorder.onstop = () => {
-      if (chunksRef.current.length > 0) {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const videoUrl = URL.createObjectURL(blob);
-        setUrl(videoUrl);
-      }
-      stream.getTracks().forEach((track) => track.stop());
-    };
-
-    mediaRecorderRef.current = recorder;
-    recorder.start(3000);
-  };
-
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  const handleGetUrl = async() => {
-      const result = await axios.post("http://localhost:3000/get_url", {session_id: sessionIdRef.current});
-
-    console.log(result);
-  }
-
-
-  return (
-    <div>
-      <button onClick={handleStartRecording}>Start Recording</button>
-      <button onClick={handleStopRecording}>Stop Recording</button>
-
-      <button onClick={handleGetUrl}>Get the url of the recording</button>
-
-      {url && <video src={url} controls />}
-    </div>
-  );
+        </Router>
+      
+    )
 }
