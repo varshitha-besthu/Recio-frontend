@@ -9,8 +9,6 @@ type Trackinfo = {
   participantIdentity : string,
 }
 
-
-
 export default function Dashboard() {
   const [room, setRoom] = useState<Room | undefined> (undefined);
   const [localTrack, setLocalTrack] = useState<LocalVideoTrack | undefined>(undefined);
@@ -23,7 +21,7 @@ export default function Dashboard() {
   async function getToken(roomName: string, participantName: string){
 
     try {
-      const res = await axios.post(" https://768b82be31f9.ngrok-free.app/getToken", {roomName, participantId: participantName},{
+      const res = await axios.post("https://recio-backend.onrender.com/getToken", {roomName, participantId: participantName},{
         headers: {
           "Content-Type": "application/json"
         }

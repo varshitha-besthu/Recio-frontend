@@ -13,7 +13,7 @@ export default function Signup() {
     e.preventDefault();
 
     try {
-      const response = await axios.post(" https://768b82be31f9.ngrok-free.app/signup", {
+      const response = await axios.post("https://recio-backend.onrender.com/signup", {
         email,
         password,
       });
