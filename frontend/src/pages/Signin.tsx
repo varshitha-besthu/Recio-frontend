@@ -14,7 +14,7 @@ export default function Signin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post("https://recio-backend.onrender.com/signin", {
+      const response = await axios.post("http://localhost:3000/signin", {
         email,
         password,
       });

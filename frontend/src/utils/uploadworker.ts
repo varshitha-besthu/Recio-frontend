@@ -18,6 +18,7 @@ function openDB(): Promise<IDBDatabase> {
           keyPath: "id",
           autoIncrement: true,
         });
+
       } else {
         store = req.transaction!.objectStore(STORE_NAME);
       }
@@ -36,9 +37,7 @@ export async function saveChunk(
   participant_id: string,
   blob: Blob
 ): Promise<number> {
-
   const db = await openDB();
-
   return new Promise<number>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
@@ -76,6 +75,7 @@ async function getNextUnuploadedChunk(): Promise<any | null> {
         resolve(cursor.value);
       }else{
         console.log("no entries found in the frontend");
+        resolve(null);
       }
     };
     req.onerror = () => reject(req.error);
@@ -122,7 +122,7 @@ async function uploadChunkToBackend(chunkData: any) {
 
     console.log("sending the data to the backend");
 
-    const res = await axios.post("http://localhost:3000/upload_chunk", formData  , {
+    const res = await axios.post("http://localhost:3000/api/upload_chunk", formData  , {
         headers: { "Content-Type": "multipart/form-data" },
     });
 

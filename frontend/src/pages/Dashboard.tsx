@@ -1,10 +1,11 @@
 import axios from "axios";
-import { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent } from "livekit-client";
-import { useState } from "react";
+import { LocalVideoTrack, RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, type AudioTrack, type VideoTrack } from "livekit-client";
+import { useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilValue } from "recoil";
 import { userIdAtom } from "../atoms/userId";
+import { saveChunk, startUploadWorker } from "../utils/uploadworker";
 
 type Trackinfo = {
   trackPublications : RemoteTrackPublication,
@@ -15,17 +16,21 @@ export default function Dashboard() {
   const [room, setRoom] = useState<Room | undefined> (undefined);
   const [localTrack, setLocalTrack] = useState<LocalVideoTrack | undefined>(undefined);
   const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
+  const sessionIdRef = useRef<string>("abc123"); 
+  
 
   const participantName = useRecoilValue(userIdAtom);
 
   const [roomName, setRoomName] = useState("Test Room");
 
   const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
+  const recorderRef = useRef<MediaRecorder | null>(null);
+
 
   async function getToken(roomName: string, participantName: string){
 
     try {
-      const res = await axios.post("https://recio-backend.onrender.com/getToken", {roomName, participantId: participantName},{
+      const res = await axios.post("http://localhost:3000/getToken", {roomName, participantId: participantName},{
         headers: {
           "Content-Type": "application/json"
         }
@@ -48,12 +53,33 @@ export default function Dashboard() {
   }
 
   async function joinRoom(){
+    sessionIdRef.current = crypto.randomUUID();
     const room = new Room();
     setRoom(room);
 
-    room.on(RoomEvent.TrackSubscribed, (_track : RemoteTrack, publication: RemoteTrackPublication, partcipant: RemoteParticipant) => {
-        setRemoteTracks(prev => [...prev, {trackPublications: publication, participantIdentity: partcipant.identity}])
-    })
+    room.on(
+        RoomEvent.TrackSubscribed,
+        (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+            console.log("Track subscribed:", pub.kind, participant.identity);
+
+            let audioTrack: RemoteAudioTrack | undefined;
+            let videoTrack: RemoteVideoTrack | undefined;
+
+            if (pub.kind === "audio" && track.kind === "audio") {
+            audioTrack = track as RemoteAudioTrack;
+            }
+
+            if (pub.kind === "video" && track.kind === "video") {
+            videoTrack = track as RemoteVideoTrack;
+            }
+
+            if (videoTrack || audioTrack) {
+            startRecording(videoTrack!, audioTrack!, participant.identity);
+            }
+        }
+    );
+
+
 
     room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
         setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
@@ -73,6 +99,54 @@ export default function Dashboard() {
 
   } 
 
+  function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
+        const stream = new MediaStream();
+        if(videoTrack){
+            stream.addTrack(videoTrack.mediaStreamTrack);
+        }
+
+        if(audioTrack){
+            stream.addTrack(audioTrack.mediaStreamTrack);
+        }
+
+        const recorder = new MediaRecorder(stream, {"mimeType" : "video/webm; codecs=vp8,opus"})
+        recorder.ondataavailable = async (event) => {
+            if (event.data.size > 0) {
+                const blob = event.data;
+                await saveChunk(sessionIdRef.current, participantName, blob);
+                }
+            };
+        recorder.start(5000);
+        
+        startUploadWorker();
+        return recorder;
+  }
+
+  function stopRecording(recorder: MediaRecorder | null) {
+        if (!recorder) return;
+        if (recorder.state !== "inactive") {
+            recorder.stop();
+        }
+        recorder.stream.getTracks().forEach(track => track.stop());
+        console.log("🛑 Recording stopped.");
+  }
+
+  async function getUrl(){
+    try {
+        console.log(sessionIdRef.current);
+        const sessionId = sessionIdRef.current;
+      const res = await axios.post("http://localhost:3000/api/get_url", {session_id :sessionId},{
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      console.log(res.data);
+    } catch (error) {
+        console.log("error occured bhahu", error);
+    }
+  }
+
+
     return (
         <>
             {!room ? (
@@ -86,7 +160,7 @@ export default function Dashboard() {
                             }}
                         >
                             <div>
-                                <label htmlFor="participant-name">Participant</label>
+                              Participant:  {participantName}
                                 
                             </div>
                             <div>
@@ -100,6 +174,7 @@ export default function Dashboard() {
                                     required
                                 />
                             </div>
+                            
                             <button
                                 className="btn btn-lg btn-success"
                                 type="submit"
@@ -117,6 +192,36 @@ export default function Dashboard() {
                         <button className="btn btn-danger" id="leave-room-button" onClick={leaveRoom}>
                             Leave Room
                         </button>
+                        <div>
+                                {!room && <div>Room is empty </div>} 
+                                {room && (
+                                    
+                                    <button
+                                        onClick={() => {
+                                        recorderRef.current = startRecording(
+                                            localTrack!,
+                                            //@ts-ignore
+                                            room.localParticipant.audioTrackPublications.values().next().value?.audioTrack,
+                                            participantName
+                                        );
+                                        }}
+                                    >
+                                        Start Recording
+                                    </button>
+                                )}
+                                {room && (
+                                <button
+                                    onClick={() => {
+                                    stopRecording(recorderRef.current);
+                                    recorderRef.current = null;
+                                    }}
+                                >
+                                    End Recording
+                                </button>
+                                )}
+
+                                <button onClick={getUrl}>Get URL</button>
+                        </div>
                     </div>
                     <div id="layout-container">
                         {localTrack && (
