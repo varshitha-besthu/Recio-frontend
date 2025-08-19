@@ -1,6 +1,6 @@
 import axios from "axios";
 import { LocalVideoTrack, RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, type AudioTrack, type VideoTrack } from "livekit-client";
-import { useEffect, useRef, useState } from "react";
+import {  useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
 import { useRecoilValue } from "recoil";
