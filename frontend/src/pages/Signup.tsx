@@ -8,12 +8,14 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const BackendUrl = import.meta.env.VITE_BACKEND_URL;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:3000/signup", {
+      const response = await axios.post(`${BackendUrl}/signup`, {
         email,
         password,
       },{

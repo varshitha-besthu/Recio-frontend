@@ -17,7 +17,7 @@ export default function Dashboard() {
   const [localTrack, setLocalTrack] = useState<LocalVideoTrack | undefined>(undefined);
   const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
   const sessionIdRef = useRef<string>("abc123"); 
-  
+  const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const participantName = useRecoilValue(userIdAtom);
 
@@ -135,7 +135,7 @@ export default function Dashboard() {
     try {
         console.log(sessionIdRef.current);
         const sessionId = sessionIdRef.current;
-      const res = await axios.post("http://localhost:3000/api/get_url", {session_id :sessionId},{
+      const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
         headers: {
           "Content-Type": "application/json"
         }

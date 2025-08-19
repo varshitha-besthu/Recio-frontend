@@ -10,11 +10,12 @@ export default function Signin() {
 
   const setUserId = useSetRecoilState(userIdAtom)
   const navigate = useNavigate();
+  const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/signin", {
+      const response = await axios.post(`${BackendUrl}/signin`, {
         email,
         password,
       });
