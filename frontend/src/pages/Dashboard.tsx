@@ -87,14 +87,7 @@ export default function Dashboard() {
                         >
                             <div>
                                 <label htmlFor="participant-name">Participant</label>
-                                <input
-                                    id="participant-name"
-                                    className="form-control"
-                                    type="text"
-                                    value={participantName}
-                                    onChange={(e) => setParticipantName(e.target.value)}
-                                    required
-                                />
+                                
                             </div>
                             <div>
                                 <label htmlFor="room-name">Room</label>
