@@ -16,7 +16,12 @@ export default function Signup() {
       const response = await axios.post("https://recio-backend.onrender.com/signup", {
         email,
         password,
-      });
+      },{
+        headers: {
+          "Content-Type" : "application/json"
+        }
+      }
+    );
 
       setMessage(response.data.message || "Signup successful!");
       navigate("/signin");

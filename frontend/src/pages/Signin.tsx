@@ -19,8 +19,8 @@ export default function Signin() {
         password,
       });
 
-      setUserId(response.data.user.id);
-      console.log("participantId", response.data.user.id);
+      setUserId(response.data.user.email);
+      console.log("participant email", response.data.user.email);
 
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");

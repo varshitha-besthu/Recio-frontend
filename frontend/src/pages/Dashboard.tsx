@@ -3,6 +3,8 @@ import { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication
 import { useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { userIdAtom } from "../atoms/userId";
 
 type Trackinfo = {
   trackPublications : RemoteTrackPublication,
@@ -13,7 +15,9 @@ export default function Dashboard() {
   const [room, setRoom] = useState<Room | undefined> (undefined);
   const [localTrack, setLocalTrack] = useState<LocalVideoTrack | undefined>(undefined);
   const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
-  const [participantName, setParticipantName] = useState("Participant" + Math.floor(Math.random() * 100));
+
+  const participantName = useRecoilValue(userIdAtom);
+
   const [roomName, setRoomName] = useState("Test Room");
 
   const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
